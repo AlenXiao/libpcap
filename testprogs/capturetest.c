@@ -145,6 +145,12 @@ main(int argc, char **argv)
 			error("%s: pcap_set_immediate_mode failed: %s",
 			    device, pcap_statustostr(status));
 	}
+#if 0
+	status = pcap_set_promisc(pd, 1);
+	if (status != 0)
+		error("%s: Can't set promiscuous mode: %s",
+		    device, pcap_statustostr(status));
+#endif
 	status = pcap_set_timeout(pd, timeout);
 	if (status != 0)
 		error("%s: pcap_set_timeout failed: %s",
@@ -171,17 +177,17 @@ main(int argc, char **argv)
 	}
 	cmdbuf = copy_argv(&argv[optind]);
 
-	if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
+	if (pcap_compile(pd, &fcode, cmdbuf, 0, netmask) < 0)
 		error("%s", pcap_geterr(pd));
 
 	if (pcap_setfilter(pd, &fcode) < 0)
 		error("%s", pcap_geterr(pd));
 	if (pcap_setnonblock(pd, nonblock, ebuf) == -1)
 		error("pcap_setnonblock failed: %s", ebuf);
-	printf("Listening on %s\n", device);
+    printf("Listening on %s\n", device);
 	for (;;) {
 		packet_count = 0;
-		status = pcap_dispatch(pd, -1, countme,
+		status = pcap_loop(pd, -1, countme,
 		    (u_char *)&packet_count);
 		if (status < 0)
 			break;
@@ -218,6 +224,8 @@ countme(u_char *user, const struct pcap_pkthdr *h _U_, const u_char *sp _U_)
 	int *counterp = (int *)user;
 
 	(*counterp)++;
+    extern int awss_ieee802_11_radio_if_print(const struct pcap_pkthdr *, const u_char *);
+    awss_ieee802_11_radio_if_print(h, sp);
 }
 
 static void
